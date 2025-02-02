@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # For communication with the RabbitMQ server
+      - "15672:15672" # For accessing RabbitMQ's management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+volumes:
+  rabbitmq_data:
+    driver: local
