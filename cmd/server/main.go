@@ -5,14 +5,24 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
+	"github.com/joho/godotenv"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
 	fmt.Println("Starting Peril server...")
-	connString := "amqp://guest:guest@localhost:5672/"
+	gamelogic.PrintServerHelp()
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+		return
+	}
+
+	connString := os.Getenv("RABBITMQ_CONN_STRING")
 	rabbitMqConnection, err := amqp.Dial(connString)
 	if err != nil {
 		fmt.Println("Failed to connect to RabbitMQ", err)
@@ -27,7 +37,24 @@ func main() {
 	message := routing.PlayingState{
 		IsPaused: true,
 	}
-	pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, message)
+
+	for {
+		input := gamelogic.GetInput()
+
+		if input[0] == "pause" {
+			fmt.Println("Pausing the game")
+			message.IsPaused = true
+			pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, message)
+		} else if input[0] == "resume" {
+			fmt.Println("Resuming the game")
+			message.IsPaused = false
+			pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, message)
+		} else if input[0] == "quit" {
+			break
+		} else {
+			fmt.Println("Uknonwn command")
+		}
+	}
 
 	defer rabbitMqConnection.Close()
 
