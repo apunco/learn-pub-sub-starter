@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/signal"
 
+	enums "github.com/bootdotdev/learn-pub-sub-starter/internal"
+
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/routing"
@@ -16,7 +18,7 @@ import (
 func main() {
 	fmt.Println("Starting Peril server...")
 	gamelogic.PrintServerHelp()
-	err := godotenv.Load()
+	err := godotenv.Load("../../.env")
 	if err != nil {
 		fmt.Println("Error loading .env file")
 		return
@@ -32,6 +34,11 @@ func main() {
 	ch, err := rabbitMqConnection.Channel()
 	if err != nil {
 		fmt.Println("Failed to create a RabbitMQ channel", err)
+	}
+
+	_, _, err = pubsub.DeclareAndBind(rabbitMqConnection, routing.ExchangePerilTopic, "game_logs", "game_logs.*", int(enums.Durable))
+	if err != nil {
+		fmt.Println("Failed to declare and bind RabbitMQ queue game_logs", err)
 	}
 
 	message := routing.PlayingState{
