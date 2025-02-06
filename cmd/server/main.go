@@ -18,7 +18,7 @@ import (
 func main() {
 	fmt.Println("Starting Peril server...")
 	gamelogic.PrintServerHelp()
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
 		return

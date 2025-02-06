@@ -15,7 +15,7 @@ func SubscribeJSON[T any](
 	queueName,
 	key string,
 	simpleQueueType enums.SimpleQueueType,
-	handler func(T),
+	handler func(T) enums.AckType,
 ) error {
 
 	ch, _, err := DeclareAndBind(conn, exchange, queueName, key, int(simpleQueueType))
@@ -33,13 +33,30 @@ func SubscribeJSON[T any](
 			var genericType T
 			json.Unmarshal(delivery.Body, &genericType)
 
-			handler(genericType)
-			err = delivery.Ack(false)
-			if err != nil {
-				fmt.Println(err)
+			ackType := handler(genericType)
+
+			switch ackType {
+			case enums.Ack:
+				fmt.Println("handling Ack")
+				err = delivery.Ack(false)
+				handleErr(err)
+			case enums.NackRequeue:
+				fmt.Println("handling Requeue")
+				err = delivery.Nack(false, true)
+				handleErr(err)
+			case enums.NackDiscard:
+				fmt.Println("handling Discard")
+				err = delivery.Nack(false, false)
+				handleErr(err)
 			}
 		}
 	}()
 
 	return nil
+}
+
+func handleErr(err error) {
+	if err != nil {
+		fmt.Println(err)
+	}
 }

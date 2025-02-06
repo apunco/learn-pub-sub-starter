@@ -14,7 +14,7 @@ import (
 
 func main() {
 	fmt.Println("Starting Peril client...")
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file", err)
 		return
@@ -78,16 +78,29 @@ func main() {
 	}
 }
 
-func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) {
-	return func(ps routing.PlayingState) {
+func handlerPause(gs *gamelogic.GameState) func(routing.PlayingState) enums.AckType {
+	return func(ps routing.PlayingState) enums.AckType {
 		defer fmt.Println("> ")
 		gs.HandlePause(ps)
+		return enums.Ack
 	}
 }
 
-func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) {
-	return func(move gamelogic.ArmyMove) {
+func handlerMove(gs *gamelogic.GameState) func(gamelogic.ArmyMove) enums.AckType {
+	return func(move gamelogic.ArmyMove) enums.AckType {
 		defer fmt.Println("> ")
-		gs.HandleMove(move)
+		outcome := gs.HandleMove(move)
+
+		switch outcome {
+		case gamelogic.MoveOutComeSafe, gamelogic.MoveOutcomeMakeWar:
+			fmt.Println("Ack message")
+			return enums.Ack
+		case gamelogic.MoveOutcomeSamePlayer:
+			fmt.Println("Nack discard message")
+			return enums.NackDiscard
+		default:
+			fmt.Println("Nack discard message")
+			return enums.NackDiscard
+		}
 	}
 }
